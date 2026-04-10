@@ -273,6 +273,14 @@
       </div>
 
       <div class="legend-item">
+        <span class="legend-colour" style="background:#ffffff;"></span>
+        Plan 0<br>Standard Operations
+      </div>
+
+
+
+
+      <div class="legend-item">
         <span class="legend-colour" style="background:#fff176;"></span>
         Plan 1<br>Fuel Conservation
       </div>
@@ -313,6 +321,29 @@
       legend.classList.toggle('collapsed');
     });
 
+    function parseDateTime(str) {
+      if (!str) return NaN;
+
+      const s = String(str).trim();
+
+      // ISO-like formats: 2026-04-10 08:00:00 or 2026-04-10T08:00:00
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const normalised = s.includes('T') ? s : s.replace(' ', 'T');
+        const ms = new Date(normalised).getTime();
+        if (Number.isFinite(ms)) return ms;
+      }
+
+      // UK format: 10/04/2026 08:00 or 10/04/2026 08:00:00
+      const match = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+      if (match) {
+        const [, day, month, year, hour, minute, second = '00'] = match;
+        return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`).getTime();
+      }
+
+      return NaN;
+    }
+
+
     function formatTime(ms) {
       const d = new Date(ms);
 
@@ -341,6 +372,8 @@
 
       map.setFilter('station-points', stationFilter);
       map.setFilter('station-labels', stationFilter);
+      map.setFilter('plan-fill', stationFilter);
+      map.setFilter('plan-outline', stationFilter);
 
 
       if (slider) {
@@ -412,52 +445,103 @@
           map.on('load', resolve);
         }
       }),
-      fetch('./Plan Tool V1.geojson').then(r => r.json()),
+      fetch('./Plan Tool V2.geojson').then(r => r.json()),
       fetch('./Station_Locations3.geojson').then(r => r.json())
     ])
+
     .then(([_, planData, pointData]) => {
-      pointData.features.forEach((f) => {
-        const p = f.properties || {};
+  pointData.features.forEach((f) => {
+    const p = f.properties || {};
 
-        p.start_ms = Date.parse(p.StartTime2);
-        p.end_ms = Date.parse(p.EndTime2);
-        p.state_num = Number(p.state);
+    p.start_ms = parseDateTime(p.StartTime2);
+    p.end_ms = parseDateTime(p.EndTime2);
+    p.state_num = Number(p.state);
 
-        f.properties = p;
-      });
+    f.properties = p;
+  });
 
-      pointData.features = pointData.features.filter(f =>
-        Number.isFinite(f.properties.start_ms) &&
-        Number.isFinite(f.properties.end_ms)
+  planData.features.forEach((f) => {
+    const p = f.properties || {};
+
+    p.start_ms = parseDateTime(p.StartTime2);
+    p.end_ms = parseDateTime(p.EndTime2);
+
+    f.properties = p;
+  });
+
+
+  console.log('First station properties:', pointData.features[0]?.properties);
+  console.log('First station parsed times:', {
+    rawStart: pointData.features[0]?.properties?.StartTime2,
+    rawEnd: pointData.features[0]?.properties?.EndTime2,
+    start_ms: pointData.features[0]?.properties?.start_ms,
+    end_ms: pointData.features[0]?.properties?.end_ms
+  });
+
+  
+  pointData.features = pointData.features.filter(f =>
+    Number.isFinite(f.properties.start_ms) &&
+    Number.isFinite(f.properties.end_ms)
+  );
+
+  planData.features = planData.features.filter(f =>
+    Number.isFinite(f.properties.start_ms) &&
+    Number.isFinite(f.properties.end_ms)
+  );
+
+  if (pointData.features.length === 0) {
+    timeLabel.textContent = 'No valid station time data found';
+    console.error('No valid StartTime2 / EndTime2 values found in Station_Locations3.geojson.');
+    return;
+  }
+
+  if (planData.features.length === 0) {
+    timeLabel.textContent = 'No valid plan time data found';
+    console.error('No valid StartTime2 / EndTime2 values found in Plan Tool V2.geojson.');
+    return;
+  }
+
+
+
+
+
+      const stepMs = 2 * 60 * 60 * 1000; // 2 hours
+
+      // Combine BOTH datasets
+      const allFeatures = [
+        ...pointData.features,
+        ...planData.features
+      ];
+
+      // Get overall time range
+      const rawEarliestStart = Math.min(
+        ...allFeatures.map(f => f.properties.start_ms)
       );
 
-      if (pointData.features.length === 0) {
-        timeLabel.textContent = 'No valid station time data found';
-        console.error('No valid StartTime / EndTime values found in Station_Locations2.geojson.');
-        return;
-      }
+      const rawLatestEnd = Math.max(
+        ...allFeatures.map(f => f.properties.end_ms)
+      );
 
-      const stepMs = 2 * 60 * 60 * 1000;
-
-      const rawEarliestStart = Math.min(...pointData.features.map(f => f.properties.start_ms));
-      const rawLatestEnd = Math.max(...pointData.features.map(f => f.properties.end_ms));
-
+      // Anchor to midnight of earliest day
       const startDate = new Date(rawEarliestStart);
       startDate.setHours(0, 0, 0, 0);
       const dayStartMs = startDate.getTime();
 
+      // Align to your 2-hour intervals
       let firstTime = dayStartMs;
       while (firstTime < rawEarliestStart) {
         firstTime += stepMs;
       }
 
+      // Build timeline
       times = [];
       for (let t = firstTime; t <= rawLatestEnd; t += stepMs) {
         times.push(t);
       }
 
+      // Initialise slider
       currentIndex = 0;
-  
+
       if (slider) {
         slider.min = 0;
         slider.max = times.length - 1;
@@ -469,6 +553,10 @@
         });
       }
       
+
+
+
+
 
       map.addSource('plan', {
         type: 'geojson',
@@ -483,6 +571,7 @@
           'fill-color': [
             'match',
             ['to-number', ['get', 'Plan']],
+            0, '#ffffff',
             1, '#fff176',
             2, '#f9a825',
             '#cccccc'
@@ -549,7 +638,20 @@
         map.setPaintProperty('plan-fill', 'fill-opacity', opacity);
       });
 
-      updateMap(0);
+      let nearestIndex = 0;
+      let smallestDiff = Math.abs(times[0] - Date.now());
+
+      for (let i = 1; i < times.length; i++) {
+        const diff = Math.abs(times[i] - Date.now());
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          nearestIndex = i;
+        }
+      }
+
+      currentIndex = nearestIndex;
+      updateMap(nearestIndex);
+
 
       const bounds = new mapboxgl.LngLatBounds();
 
