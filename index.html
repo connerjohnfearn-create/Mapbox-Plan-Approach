@@ -193,7 +193,7 @@
       }
 
       #opacityControl {
-        top: 92px;
+        top: 150px;
         left: 8px;
         width: 200px;
         padding: 10px;
@@ -234,7 +234,7 @@
 </head>
 <body>
   <div id="messageBar">
-    PROCEDURE IMPLEMENTED 10/04/2026 16:00
+    PROCEDURES IMPLEMENTED 10/04/2026 16:00
   </div>
 
   <div id="map"></div>
@@ -554,10 +554,6 @@
       }
       
 
-
-
-
-
       map.addSource('plan', {
         type: 'geojson',
         data: planData
@@ -678,9 +674,20 @@
       });
 
       if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 30 });
+        const isMobile = window.innerWidth <= 768;
+
+        map.fitBounds(bounds, {
+          padding: isMobile
+            ? { top: 180, right: 20, bottom: 140, left: 20 }
+            : { top: 80, right: 40, bottom: 40, left: 40 }
+        });
       }
 
+      setTimeout(() => {
+        map.resize();
+      }, 200);
+
+  
       console.log('Plan features:', planData.features.length);
       console.log('Point features:', pointData.features.length);
     })
