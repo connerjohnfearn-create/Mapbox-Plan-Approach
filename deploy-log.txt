@@ -1,0 +1,43 @@
+
+Welcome to Azure Static Web Apps CLI (2.0.8)
+
+Getting config file options from "swa-cli.config.json"...
+Changed directory to C:\Users\Conne\Downloads\Coverage tool\Mapbox - Plan approach
+Using configuration "mapbox---plan-approach" from file:
+  C:\Users\Conne\Downloads\Coverage tool\Mapbox - Plan approach\swa-cli.config.json
+
+Resolving outputLocation=. full path...
+Deploying front-end files from folder:
+  C:\Users\Conne\Downloads\Coverage tool\Mapbox - Plan approach
+
+Consider providing api-language and version using --api-language and --api-version flags,
+    otherwise default values apiLanguage: node and apiVersion: 16 will apply
+No deployment token found. Trying interactive login...
+Checking Azure session...
+Executing authenticateWithAzureIdentity
+- details:
+  - tenantId: <undefined>
+  - clientId: <undefined>
+  - clientSecret: <undefined>
+ - useKeychain: true
+Keychain is enabled
+Executing swaCliPersistencePlugin
+✔ Successfully logged into Azure!
+Found an existing Azure config file, getting Tenant and Subscription Id from C:\Users\Conne\.azure\azureProfile.json
+Selected tenant: d4a57f66-5b0c-4f2f-8686-724fe483ba36
+Selected subscription: 8876bc5f-be4b-41a4-9e54-951b3ace3840
+Project credentials:
+ - subscriptionId: 8876bc5f-be4b-41a4-9e54-951b3ace3840
+ - tenantId: d4a57f66-5b0c-4f2f-8686-724fe483ba36
+ - clientId: <undefined>
+ - clientSecret: <undefined>
+Login successful
+
+Checking project settings...
+choose static site with initial: undefined
+[?25l[36m?[39m [1mChoose your Static Web App[22m [90m»[39m [90m- Use arrow-keys. Return to submit.[39m
+[36m>[39m   [36m[4m>> Create a new application[39m[24m[90m[39m
+    Maps/Map[90m[39m
+    mapbox---plan-approach-rg/mapbox---plan-approach[90m[39m
+[2K[1G[32m√[39m [1mChoose your Static Web App[22m [90m»[39m >> Create a new application
+[?25h[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m [90mmapbox---plan-approach[39m78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m t78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m ty78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m typ78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type 78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type d78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type de78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type dep78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type depl78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deplo78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-l78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-lo78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-log78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-log.78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-log.t78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-log.tx78[2K[1G[2K[1G[36m?[39m [1mChoose a project name:[22m [90m»[39m type deploy-log.txt78

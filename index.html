@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Station status over time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    #topControls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #timeHeader {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    #playButton,
+    #nowButton {
+      background: #ffffff;
+      border: 1px solid #bfbfbf;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #playButton:hover,
+    #nowButton:hover {
+      background: #f2f2f2;
+    }
+
+    #timeLabel {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    #slider {
+      width: 100%;
+      height: 32px;
+      margin: 0;
+    }
+
+    #opacityControl {
+      position: absolute;
+      top: 110px;
+      left: 12px;
+      z-index: 10;
+      width: 240px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #opacityRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    #opacitySlider {
+      width: 100%;
+    }
+
+    #legend {
+      position: absolute;
+      bottom: 110px;
+      left: 12px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+      width: 210px;
+    }
+
+    .legend-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .legend-colour {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 1px solid #888;
+      box-sizing: border-box;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      border-radius: 50%;
+      border: 1px solid #888;
+      box-sizing: border-box;
+    }
+
+    #logo {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 180px;
+      height: auto;
+      z-index: 20;
+      pointer-events: none;
+      background: rgba(245, 245, 245, 0.30);
+      border: 1px solid rgba(160, 160, 160, 0.7);
+      border-radius: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 768px) {
+      #topControls {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        padding: 10px 12px;
+      }
+
+      #timeHeader {
+        gap: 8px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      #playButton,
+      #nowButton {
+        padding: 5px 10px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      #timeLabel {
+        font-size: 16px;
+        line-height: 1.2;
+      }
+
+      #slider {
+        height: 28px;
+      }
+
+      #opacityControl {
+        top: 95px;
+        left: 8px;
+        width: 200px;
+        padding: 10px;
+      }
+
+      #legend {
+        left: 8px;
+        bottom: 75px;
+        width: 180px;
+        padding: 10px;
+      }
+
+      .legend-title {
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      .legend-item {
+        margin-bottom: 4px;
+        font-size: 15px;
+      }
+
+      .legend-colour,
+      .legend-dot {
+        width: 14px;
+        height: 14px;
+        margin-right: 6px;
+      }
+
+      #logo {
+        right: 8px;
+        bottom: 75px;
+        width: 120px;
+        padding: 6px;
+        border-radius: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="topControls">
+    <div id="timeHeader">
+      <button id="playButton" type="button">Play</button>
+      <button id="nowButton" type="button">Realtime</button>
+      <div id="timeLabel">Loading…</div>
+    </div>
+    <input id="slider" type="range" min="0" max="0" step="1" value="0" />
+  </div>
+
+  <div id="opacityControl">
+    <div id="opacityRow">
+      <label for="opacitySlider">Plan opacity</label>
+      <span id="opacityValue">75%</span>
+    </div>
+    <input id="opacitySlider" type="range" min="0" max="100" step="1" value="75" />
+  </div>
+
+  <div id="legend">
+    <div class="legend-title">Legend</div>
+
+    <div class="legend-item">
+      <span class="legend-dot" style="background:#1a9850;"></span>
+      On the run
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-dot" style="background:#d73027;"></span>
+      Off the run
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-colour" style="background:#fff176;"></span>
+      Plan 1 <br> Fuel Conservation
+    </div>
+
+    <div class="legend-item">
+      <span class="legend-colour" style="background:#f9a825;"></span>
+      Plan 2 <br> Limited Attendance
+    </div>
+  </div>
+
+  <img id="logo" src="./NMACSRGB.png" alt="NMACS logo" />
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoidGhleWNhbGxtZWRhdmUiLCJhIjoiY21ucm1mZHE4MDJtbjJyczYwampuM2JidyJ9.4HO27AUaGS1KDf-T5isw8Q';
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-8.2, 53.3],
+      zoom: 6
+    });
+
+    const slider = document.getElementById('slider');
+    const timeLabel = document.getElementById('timeLabel');
+    const opacitySlider = document.getElementById('opacitySlider');
+    const opacityValue = document.getElementById('opacityValue');
+    const playButton = document.getElementById('playButton');
+    const nowButton = document.getElementById('nowButton');
+
+    let times = [];
+    let playInterval = null;
+
+    function formatTime(ms) {
+      const d = new Date(ms);
+
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+
+      return `${day} - ${month} - ${year} | ${hours}:${minutes}`;
+    }
+
+    function updateMap(index) {
+      const currentMs = times[index];
+      if (!Number.isFinite(currentMs)) return;
+
+      timeLabel.textContent = formatTime(currentMs);
+
+      const stationFilter = [
+        'all',
+        ['<=', ['get', 'start_ms'], currentMs],
+        ['>', ['get', 'end_ms'], currentMs]
+      ];
+
+      map.setFilter('station-points', stationFilter);
+      map.setFilter('station-labels', stationFilter);
+    }
+
+    function stopPlayback() {
+      if (playInterval !== null) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+      playButton.textContent = 'Play';
+    }
+
+    function startPlayback() {
+      if (playInterval !== null) return;
+
+      playButton.textContent = 'Pause';
+
+      playInterval = setInterval(() => {
+        let currentIndex = Number(slider.value);
+
+        if (currentIndex >= times.length - 1) {
+          stopPlayback();
+          return;
+        }
+
+        currentIndex += 1;
+        slider.value = currentIndex;
+        updateMap(currentIndex);
+      }, 500);
+    }
+
+    function jumpToNow() {
+      if (!times.length) return;
+
+      const nowMs = Date.now();
+
+      let nearestIndex = 0;
+      let smallestDiff = Math.abs(times[0] - nowMs);
+
+      for (let i = 1; i < times.length; i++) {
+        const diff = Math.abs(times[i] - nowMs);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          nearestIndex = i;
+        }
+      }
+
+      stopPlayback();
+      slider.value = nearestIndex;
+      updateMap(nearestIndex);
+    }
+
+    playButton.addEventListener('click', () => {
+      if (playInterval === null) {
+        startPlayback();
+      } else {
+        stopPlayback();
+      }
+    });
+
+    nowButton.addEventListener('click', () => {
+      jumpToNow();
+    });
+
+    Promise.all([
+      new Promise(resolve => {
+        if (map.loaded()) {
+          resolve();
+        } else {
+          map.on('load', resolve);
+        }
+      }),
+      fetch('./Plan Tool V1.geojson').then(r => r.json()),
+      fetch('./Station_Locations2.geojson').then(r => r.json())
+    ])
+    .then(([_, planData, pointData]) => {
+      pointData.features.forEach((f) => {
+        const p = f.properties || {};
+
+        p.start_ms = Date.parse(p.StartTime);
+        p.end_ms = Date.parse(p.EndTime);
+        p.state_num = Number(p.state);
+
+        f.properties = p;
+      });
+
+      pointData.features = pointData.features.filter(f =>
+        Number.isFinite(f.properties.start_ms) &&
+        Number.isFinite(f.properties.end_ms)
+      );
+
+      if (pointData.features.length === 0) {
+        timeLabel.textContent = 'No valid station time data found';
+        console.error('No valid StartTime / EndTime values found in Station_Locations2.geojson.');
+        return;
+      }
+
+      const stepMs = 2 * 60 * 60 * 1000; // 2 hours
+
+      const rawEarliestStart = Math.min(...pointData.features.map(f => f.properties.start_ms));
+      const rawLatestEnd = Math.max(...pointData.features.map(f => f.properties.end_ms));
+
+      const startDate = new Date(rawEarliestStart);
+      startDate.setHours(0, 0, 0, 0);
+      const dayStartMs = startDate.getTime();
+
+      let firstTime = dayStartMs;
+      while (firstTime < rawEarliestStart) {
+        firstTime += stepMs;
+      }
+
+      times = [];
+      for (let t = firstTime; t <= rawLatestEnd; t += stepMs) {
+        times.push(t);
+      }
+
+      slider.min = 0;
+      slider.max = times.length - 1;
+      slider.value = 0;
+
+      map.addSource('plan', {
+        type: 'geojson',
+        data: planData
+      });
+
+      map.addLayer({
+        id: 'plan-fill',
+        type: 'fill',
+        source: 'plan',
+        paint: {
+          'fill-color': [
+            'match',
+            ['to-number', ['get', 'Plan']],
+            1, '#fff176',
+            2, '#f9a825',
+            '#cccccc'
+          ],
+          'fill-opacity': 0.75
+        }
+      });
+
+      map.addLayer({
+        id: 'plan-outline',
+        type: 'line',
+        source: 'plan',
+        paint: {
+          'line-color': '#666666',
+          'line-width': 1
+        }
+      });
+
+      map.addSource('station-points', {
+        type: 'geojson',
+        data: pointData
+      });
+
+      map.addLayer({
+        id: 'station-points',
+        type: 'circle',
+        source: 'station-points',
+        paint: {
+          'circle-radius': 5.5,
+          'circle-color': [
+            'match',
+            ['get', 'state_num'],
+            0, '#d73027',
+            1, '#1a9850',
+            '#666666'
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1
+        }
+      });
+
+      map.addLayer({
+        id: 'station-labels',
+        type: 'symbol',
+        source: 'station-points',
+        layout: {
+          'text-field': ['get', 'Callsign'],
+          'text-size': 11,
+          'text-offset': [0, 1.1],
+          'text-anchor': 'top',
+          'text-allow-overlap': true
+        },
+        paint: {
+          'text-color': [
+            'match',
+            ['get', 'state_num'],
+            0, '#111111',
+            1, '#111111',
+            '#111111'
+          ],
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.2
+        }
+      });
+
+      slider.addEventListener('input', e => {
+        stopPlayback();
+        updateMap(Number(e.target.value));
+      });
+
+      opacitySlider.addEventListener('input', e => {
+        const value = Number(e.target.value);
+        const opacity = value / 100;
+        opacityValue.textContent = `${value}%`;
+        map.setPaintProperty('plan-fill', 'fill-opacity', opacity);
+      });
+
+      updateMap(0);
+
+      const bounds = new mapboxgl.LngLatBounds();
+
+      planData.features.forEach(f => {
+        const geom = f.geometry;
+        if (!geom) return;
+
+        if (geom.type === 'Polygon') {
+          geom.coordinates[0].forEach(coord => bounds.extend(coord));
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(poly => {
+            poly[0].forEach(coord => bounds.extend(coord));
+          });
+        }
+      });
+
+      pointData.features.forEach(f => {
+        const geom = f.geometry;
+        if (!geom) return;
+
+        if (geom.type === 'Point') {
+          bounds.extend(geom.coordinates);
+        }
+      });
+
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { padding: 30 });
+      }
+
+      console.log('Plan features:', planData.features.length);
+      console.log('Point features:', pointData.features.length);
+    })
+    .catch(err => {
+      console.error(err);
+      timeLabel.textContent = 'Error loading data';
+    });
+  </script>
+</body>
+</html>
