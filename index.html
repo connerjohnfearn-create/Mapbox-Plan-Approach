@@ -16,14 +16,28 @@
 
     #map {
       position: absolute;
-      top: 0;
+      top: 36px;
       bottom: 0;
       width: 100%;
     }
 
+    #messageBar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: #333333;
+      color: white;
+      text-align: center;
+      padding: 8px 0;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
     #topControls {
       position: absolute;
-      top: 12px;
+      top: 48px;
       left: 12px;
       right: 12px;
       z-index: 10;
@@ -37,7 +51,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
 
     #playButton,
@@ -64,12 +78,12 @@
     #slider {
       width: 100%;
       height: 32px;
-      margin: 0;
+      margin: 8px 0 0 0;
     }
 
     #opacityControl {
       position: absolute;
-      top: 110px;
+      top: 130px;
       left: 12px;
       z-index: 10;
       width: 240px;
@@ -103,9 +117,13 @@
       width: 210px;
     }
 
-    .legend-title {
+    #legendHeader {
       font-weight: bold;
-      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    #legendContent {
+      margin-top: 8px;
     }
 
     .legend-item {
@@ -120,6 +138,7 @@
       margin-right: 8px;
       border: 1px solid #888;
       box-sizing: border-box;
+      flex: 0 0 auto;
     }
 
     .legend-dot {
@@ -129,6 +148,7 @@
       border-radius: 50%;
       border: 1px solid #888;
       box-sizing: border-box;
+      flex: 0 0 auto;
     }
 
     #logo {
@@ -148,7 +168,7 @@
 
     @media (max-width: 768px) {
       #topControls {
-        top: 8px;
+        top: 44px;
         left: 8px;
         right: 8px;
         padding: 10px 12px;
@@ -172,12 +192,8 @@
         line-height: 1.2;
       }
 
-      #slider {
-        height: 28px;
-      }
-
       #opacityControl {
-        top: 95px;
+        top: 92px;
         left: 8px;
         width: 200px;
         padding: 10px;
@@ -190,9 +206,8 @@
         padding: 10px;
       }
 
-      .legend-title {
-        font-size: 16px;
-        margin-bottom: 6px;
+      #legend.collapsed #legendContent {
+        display: none;
       }
 
       .legend-item {
@@ -218,6 +233,10 @@
   </style>
 </head>
 <body>
+  <div id="messageBar">
+    IMPLEMENTED 10/04/2026 16:00
+  </div>
+
   <div id="map"></div>
 
   <div id="topControls">
@@ -226,38 +245,42 @@
       <button id="nowButton" type="button">Realtime</button>
       <div id="timeLabel">Loading…</div>
     </div>
+
+
     <input id="slider" type="range" min="0" max="0" step="1" value="0" />
   </div>
 
   <div id="opacityControl">
     <div id="opacityRow">
       <label for="opacitySlider">Plan opacity</label>
-      <span id="opacityValue">75%</span>
+      <span id="opacityValue">60%</span>
     </div>
-    <input id="opacitySlider" type="range" min="0" max="100" step="1" value="75" />
+    <input id="opacitySlider" type="range" min="0" max="100" step="1" value="60" />
   </div>
 
-  <div id="legend">
-    <div class="legend-title">Legend</div>
+  <div id="legend" class="collapsed">
+    <div id="legendHeader">Legend ▼</div>
 
-    <div class="legend-item">
-      <span class="legend-dot" style="background:#1a9850;"></span>
-      On the run
-    </div>
+    <div id="legendContent">
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#1a9850;"></span>
+        On the run
+      </div>
 
-    <div class="legend-item">
-      <span class="legend-dot" style="background:#d73027;"></span>
-      Off the run
-    </div>
+      <div class="legend-item">
+        <span class="legend-dot" style="background:#d73027;"></span>
+        Off the run
+      </div>
 
-    <div class="legend-item">
-      <span class="legend-colour" style="background:#fff176;"></span>
-      Plan 1 <br> Fuel Conservation
-    </div>
+      <div class="legend-item">
+        <span class="legend-colour" style="background:#fff176;"></span>
+        Plan 1<br>Fuel Conservation
+      </div>
 
-    <div class="legend-item">
-      <span class="legend-colour" style="background:#f9a825;"></span>
-      Plan 2 <br> Limited Attendance
+      <div class="legend-item">
+        <span class="legend-colour" style="background:#f9a825;"></span>
+        Plan 2<br>Demand Reduction Protocols
+      </div>
     </div>
   </div>
 
@@ -279,9 +302,16 @@
     const opacityValue = document.getElementById('opacityValue');
     const playButton = document.getElementById('playButton');
     const nowButton = document.getElementById('nowButton');
+    const legend = document.getElementById('legend');
+    const legendHeader = document.getElementById('legendHeader');
 
     let times = [];
     let playInterval = null;
+    let currentIndex = 0;
+
+    legendHeader.addEventListener('click', () => {
+      legend.classList.toggle('collapsed');
+    });
 
     function formatTime(ms) {
       const d = new Date(ms);
@@ -300,6 +330,7 @@
       const currentMs = times[index];
       if (!Number.isFinite(currentMs)) return;
 
+      currentIndex = index;
       timeLabel.textContent = formatTime(currentMs);
 
       const stationFilter = [
@@ -310,6 +341,11 @@
 
       map.setFilter('station-points', stationFilter);
       map.setFilter('station-labels', stationFilter);
+
+
+      if (slider) {
+        slider.value = index;
+      }
     }
 
     function stopPlayback() {
@@ -321,20 +357,17 @@
     }
 
     function startPlayback() {
-      if (playInterval !== null) return;
+      if (playInterval !== null || times.length === 0) return;
 
       playButton.textContent = 'Pause';
 
       playInterval = setInterval(() => {
-        let currentIndex = Number(slider.value);
-
         if (currentIndex >= times.length - 1) {
           stopPlayback();
           return;
         }
 
         currentIndex += 1;
-        slider.value = currentIndex;
         updateMap(currentIndex);
       }, 500);
     }
@@ -356,7 +389,6 @@
       }
 
       stopPlayback();
-      slider.value = nearestIndex;
       updateMap(nearestIndex);
     }
 
@@ -381,14 +413,14 @@
         }
       }),
       fetch('./Plan Tool V1.geojson').then(r => r.json()),
-      fetch('./Station_Locations2.geojson').then(r => r.json())
+      fetch('./Station_Locations3.geojson').then(r => r.json())
     ])
     .then(([_, planData, pointData]) => {
       pointData.features.forEach((f) => {
         const p = f.properties || {};
 
-        p.start_ms = Date.parse(p.StartTime);
-        p.end_ms = Date.parse(p.EndTime);
+        p.start_ms = Date.parse(p.StartTime2);
+        p.end_ms = Date.parse(p.EndTime2);
         p.state_num = Number(p.state);
 
         f.properties = p;
@@ -405,7 +437,7 @@
         return;
       }
 
-      const stepMs = 2 * 60 * 60 * 1000; // 2 hours
+      const stepMs = 2 * 60 * 60 * 1000;
 
       const rawEarliestStart = Math.min(...pointData.features.map(f => f.properties.start_ms));
       const rawLatestEnd = Math.max(...pointData.features.map(f => f.properties.end_ms));
@@ -424,9 +456,19 @@
         times.push(t);
       }
 
-      slider.min = 0;
-      slider.max = times.length - 1;
-      slider.value = 0;
+      currentIndex = 0;
+  
+      if (slider) {
+        slider.min = 0;
+        slider.max = times.length - 1;
+        slider.value = 0;
+
+        slider.addEventListener('input', e => {
+          stopPlayback();
+          updateMap(Number(e.target.value));
+        });
+      }
+      
 
       map.addSource('plan', {
         type: 'geojson',
@@ -445,7 +487,7 @@
             2, '#f9a825',
             '#cccccc'
           ],
-          'fill-opacity': 0.75
+          'fill-opacity': 0.60
         }
       });
 
@@ -494,21 +536,10 @@
           'text-allow-overlap': true
         },
         paint: {
-          'text-color': [
-            'match',
-            ['get', 'state_num'],
-            0, '#111111',
-            1, '#111111',
-            '#111111'
-          ],
+          'text-color': '#111111',
           'text-halo-color': '#ffffff',
           'text-halo-width': 1.2
         }
-      });
-
-      slider.addEventListener('input', e => {
-        stopPlayback();
-        updateMap(Number(e.target.value));
       });
 
       opacitySlider.addEventListener('input', e => {
